@@ -29,10 +29,20 @@ class HTTPClient:
             headers={"User-Agent": self.config.user_agent},
         )
 
-    def get(self, url: str) -> httpx.Response:
+    def get(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        params: dict[str, str] | None = None,
+    ) -> httpx.Response:
         """Perform an HTTP GET request."""
         try:
-            response = self._client.get(url)
+            response = self._client.get(
+                url,
+                headers=headers,
+                params=params,
+            )
         except httpx.TimeoutException as exc:
             raise RequestTimeoutError("HTTP request timed out") from exc
 
