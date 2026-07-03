@@ -26,6 +26,7 @@ class ShopifyClient:
     def build_url(self, path: str) -> str:
         """Build a Shopify Admin API URL."""
         normalized_path = path if path.startswith("/") else f"/{path}"
+
         return (
             f"https://{self.shop_domain}"
             f"/admin/api/{self.api_version}"
@@ -34,8 +35,14 @@ class ShopifyClient:
 
     def get(self, path: str) -> httpx.Response:
         """Perform an authenticated Shopify GET request."""
-        url = self.build_url(path)
         return self.http_client.get(
-            url,
-            headers={"X-Shopify-Access-Token": self.access_token},
+            self.build_url(path),
+            headers={
+                "X-Shopify-Access-Token": self.access_token,
+            },
         )
+
+    def test_connection(self) -> bool:
+        """Verify Shopify credentials."""
+        response = self.get("/shop.json")
+        return response.status_code == 200
