@@ -6,6 +6,7 @@ import argparse
 from alpha60.config import load_settings
 from alpha60.jobs.shopify_products_runner import run_shopify_products_ingestion
 from alpha60.operations.health import (
+    HealthCheckResult,
     HealthStatus,
     check_bigquery,
     check_configuration,
@@ -63,7 +64,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate BigQuery connectivity",
     )
 
+    test_subparsers.add_parser(
+        "all",
+        help="Run all operational health checks",
+    )
+
     return parser
+
+
+def print_health_result(result: HealthCheckResult) -> None:
+    """Print a health check result."""
+    print(f"{result.name}: {result.status.value} - {result.message}")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -87,11 +98,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings = load_settings()
         health_result = check_configuration(settings=settings)
 
-        print(
-            f"{health_result.name}: "
-            f"{health_result.status.value} - "
-            f"{health_result.message}"
-        )
+        print_health_result(health_result)
 
         return 0 if health_result.status == HealthStatus.PASS else 1
 
@@ -99,11 +106,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings = load_settings()
         health_result = check_shopify(settings=settings)
 
-        print(
-            f"{health_result.name}: "
-            f"{health_result.status.value} - "
-            f"{health_result.message}"
-        )
+        print_health_result(health_result)
 
         return 0 if health_result.status == HealthStatus.PASS else 1
 
@@ -111,13 +114,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings = load_settings()
         health_result = check_bigquery(settings=settings)
 
-        print(
-            f"{health_result.name}: "
-            f"{health_result.status.value} - "
-            f"{health_result.message}"
-        )
+        print_health_result(health_result)
 
         return 0 if health_result.status == HealthStatus.PASS else 1
+
+    if args.command == "test" and args.health_check == "all":
+        settings = load_settings()
+        health_results = [
+            check_configuration(settings=settings),
+            check_shopify(settings=settings),
+            check_bigquery(settings=settings),
+        ]
+
+        for health_result in health_results:
+            print_health_result(health_result)
+
+        if all(result.status == HealthStatus.PASS for result in health_results):
+            return 0
+
+        return 1
 
     parser.error("Unsupported command")
     return 2
