@@ -13,18 +13,26 @@ from alpha60.warehouse.types import WarehouseLoadResult, WarehouseLoadStatus
 class BigQueryLoader(WarehouseLoader):
     """Loads records into Google BigQuery."""
 
-    def __init__(self, config: BigQueryConfig, client: BigQueryClient) -> None:
+    def __init__(
+        self,
+        config: BigQueryConfig,
+        client: BigQueryClient,
+    ) -> None:
         """Create a new BigQuery loader."""
         self._config = config
         self._client = client
 
-    def load(self, table_id: str, records: Iterable[Record]) -> WarehouseLoadResult:
+    def load(
+        self,
+        table_id: str,
+        records: Iterable[Record],
+    ) -> WarehouseLoadResult:
         """Load records into a BigQuery table."""
         qualified_table_id = self._qualified_table_id(table_id)
         rows = [record_to_bigquery_row(record) for record in records]
 
         try:
-            rows_loaded = self._client.insert_rows(
+            rows_loaded = self._client.load_rows(
                 table_id=qualified_table_id,
                 rows=rows,
             )

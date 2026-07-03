@@ -19,12 +19,12 @@ class FakeBigQueryClient:
         self.table_id: str | None = None
         self.rows: list[dict[str, Any]] = []
 
-    def insert_rows(
+    def load_rows(
         self,
         table_id: str,
         rows: Iterable[dict[str, Any]],
     ) -> int:
-        """Record inserted rows and return configured row count."""
+        """Record loaded rows and return configured row count."""
         self.table_id = table_id
         self.rows = list(rows)
         return self.rows_loaded
@@ -33,17 +33,17 @@ class FakeBigQueryClient:
 class FailingBigQueryClient:
     """Fake BigQuery client that raises an error."""
 
-    def insert_rows(
+    def load_rows(
         self,
         table_id: str,
         rows: Iterable[dict[str, Any]],
     ) -> int:
         """Raise a fake BigQuery loading error."""
-        raise RuntimeError("BigQuery insert failed")
+        raise RuntimeError("BigQuery load failed")
 
 
 def test_bigquery_loader_loads_records() -> None:
-    """The BigQuery loader converts records and inserts them through the client."""
+    """The BigQuery loader converts records and loads them through the client."""
     client = FakeBigQueryClient(rows_loaded=1)
     loader = BigQueryLoader(
         config=BigQueryConfig(
@@ -101,4 +101,4 @@ def test_bigquery_loader_returns_failed_result_when_client_fails() -> None:
     assert result.status == WarehouseLoadStatus.FAILED
     assert result.table_id == "alpha60-dev.raw.shopify_products"
     assert result.rows_loaded == 0
-    assert result.error_message == "BigQuery insert failed"
+    assert result.error_message == "BigQuery load failed"
