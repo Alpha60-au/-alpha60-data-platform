@@ -4,7 +4,7 @@ This document is the living architecture reference for the ALPHA60 Data Platform
 
 ## Current Version
 
-**v0.3.0**
+**v0.4.x**
 
 ## Platform Goals
 
@@ -45,20 +45,84 @@ The platform is designed to:
 
 - Shopify Products ingestion
 
+### Operations
+
+- Health check framework
+- Structured JSON logging
+- Incremental state model
+- BigQuery-backed operational metadata repository foundation
+
 ### CLI
 
 - `alpha60 ingest shopify-products`
+- `alpha60 test config`
+- `alpha60 test shopify`
+- `alpha60 test bigquery`
+- `alpha60 test all`
 
-## Phase 2 Objectives
+## Operations Metadata
 
-1. Operational health checks
-2. Structured logging and observability
-3. Incremental loading
-4. Cloud Run deployment
-5. GitHub Actions CI/CD
-6. Scheduling
-7. Secrets management
-8. Production hardening
+Operational metadata is stored in BigQuery so that state survives Cloud Run container restarts and remains queryable for audit, monitoring and reporting.
+
+### `platform_state`
+
+Stores the current resumable state for operational processes.
+
+This table answers:
+
+> Where should this job resume from?
+
+Expected columns:
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `job_name` | STRING | Unique job identifier |
+| `cursor_field` | STRING | Source field used for incremental loading |
+| `cursor_value` | TIMESTAMP | Last successfully processed cursor value |
+| `updated_at` | TIMESTAMP | Time the state was last updated |
+
+Design rules:
+
+- One row per job.
+- Mutable current state only.
+- Used by ingestion jobs before and after successful runs.
+
+### `job_history`
+
+Stores an append-only record of job executions.
+
+This table answers:
+
+> What happened over time?
+
+Expected columns:
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `job_name` | STRING | Unique job identifier |
+| `run_started_at` | TIMESTAMP | Job start time |
+| `run_completed_at` | TIMESTAMP | Job completion time |
+| `status` | STRING | Job result |
+| `rows_processed` | INTEGER | Number of rows processed |
+| `duration_seconds` | FLOAT | Runtime duration |
+| `message` | STRING | Human-readable execution summary |
+
+Design rules:
+
+- Append-only.
+- No current-state responsibility.
+- Used for audit, dashboards and operational monitoring.
+
+## Phase 3 Objectives
+
+1. Structured logging
+2. Incremental loading
+3. Cloud Run deployment
+4. GitHub Actions CI/CD
+5. Secret Manager integration
+6. Cloud Scheduler
+7. Production hardening
+8. v1.0.0 release
 
 ## Documentation
 
