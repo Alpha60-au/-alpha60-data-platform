@@ -5,6 +5,8 @@ from enum import StrEnum
 
 from alpha60.config.settings import Settings
 from alpha60.connectors.shopify.client import ShopifyClient
+from alpha60.warehouse.bigquery.config import BigQueryConfig
+from alpha60.warehouse.bigquery.google_client import GoogleBigQueryClient
 
 
 class HealthStatus(StrEnum):
@@ -72,4 +74,28 @@ def check_shopify(settings: Settings) -> HealthCheckResult:
         name="shopify",
         status=HealthStatus.FAIL,
         message="Shopify connection failed.",
+    )
+
+
+def check_bigquery(settings: Settings) -> HealthCheckResult:
+    """Validate BigQuery connectivity."""
+    client = GoogleBigQueryClient(
+        config=BigQueryConfig(
+            project_id=settings.bigquery.project_id,
+            dataset_id=settings.bigquery.dataset_id,
+            location=settings.bigquery.location,
+        ),
+    )
+
+    if client.test_connection():
+        return HealthCheckResult(
+            name="bigquery",
+            status=HealthStatus.PASS,
+            message="BigQuery connection succeeded.",
+        )
+
+    return HealthCheckResult(
+        name="bigquery",
+        status=HealthStatus.FAIL,
+        message="BigQuery connection failed.",
     )

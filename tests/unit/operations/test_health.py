@@ -8,6 +8,7 @@ from alpha60.config.shopify import ShopifySettings
 from alpha60.operations.health import (
     HealthCheckResult,
     HealthStatus,
+    check_bigquery,
     check_configuration,
     check_shopify,
 )
@@ -106,4 +107,32 @@ def test_check_shopify_fails_when_connection_fails() -> None:
         name="shopify",
         status=HealthStatus.FAIL,
         message="Shopify connection failed.",
+    )
+
+
+def test_check_bigquery_passes_when_connection_succeeds() -> None:
+    """BigQuery health check passes when the connection succeeds."""
+    with patch("alpha60.operations.health.GoogleBigQueryClient") as client:
+        client.return_value.test_connection.return_value = True
+
+        result = check_bigquery(settings=build_settings())
+
+    assert result == HealthCheckResult(
+        name="bigquery",
+        status=HealthStatus.PASS,
+        message="BigQuery connection succeeded.",
+    )
+
+
+def test_check_bigquery_fails_when_connection_fails() -> None:
+    """BigQuery health check fails when the connection fails."""
+    with patch("alpha60.operations.health.GoogleBigQueryClient") as client:
+        client.return_value.test_connection.return_value = False
+
+        result = check_bigquery(settings=build_settings())
+
+    assert result == HealthCheckResult(
+        name="bigquery",
+        status=HealthStatus.FAIL,
+        message="BigQuery connection failed.",
     )
