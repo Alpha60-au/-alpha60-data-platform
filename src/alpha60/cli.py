@@ -5,6 +5,7 @@ import argparse
 
 from alpha60.config import load_settings
 from alpha60.jobs.shopify_products_runner import run_shopify_products_ingestion
+from alpha60.warehouse.types import WarehouseLoadStatus
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,7 +21,11 @@ def build_parser() -> argparse.ArgumentParser:
         "ingest",
         help="Run ingestion jobs",
     )
-    ingest_subparsers = ingest_parser.add_subparsers(dest="ingestion_job", required=True)
+
+    ingest_subparsers = ingest_parser.add_subparsers(
+        dest="ingestion_job",
+        required=True,
+    )
 
     ingest_subparsers.add_parser(
         "shopify-products",
@@ -38,11 +43,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "ingest" and args.ingestion_job == "shopify-products":
         settings = load_settings()
         result = run_shopify_products_ingestion(settings=settings)
+
         print(
-            f"Loaded {result.rows_loaded} rows into {result.table_id} "
+            f"Loaded {result.rows_loaded} rows into "
+            f"{result.table_id} "
             f"with status {result.status.value}."
         )
-        return 0
+
+        if result.status == WarehouseLoadStatus.SUCCESS:
+            return 0
+
+        return 1
 
     parser.error("Unsupported command")
     return 2
