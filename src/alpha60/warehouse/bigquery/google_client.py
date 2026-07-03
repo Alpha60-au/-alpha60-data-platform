@@ -23,6 +23,17 @@ class GoogleBigQueryClient:
             location=config.location,
         )
 
+    def test_connection(self) -> bool:
+        """Verify BigQuery dataset access."""
+        dataset_ref = f"{self._config.project_id}.{self._config.dataset_id}"
+
+        try:
+            self._client.get_dataset(dataset_ref)
+        except Exception:
+            return False
+
+        return True
+
     def load_rows(
         self,
         table_id: str,
@@ -45,3 +56,4 @@ class GoogleBigQueryClient:
             raise RuntimeError(f"BigQuery load failed: {load_job.errors}")
 
         return int(load_job.output_rows or len(rows_to_load))
+    

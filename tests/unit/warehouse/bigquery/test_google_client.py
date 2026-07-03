@@ -37,6 +37,37 @@ def test_google_bigquery_client_creates_sdk_client_from_config() -> None:
     )
 
 
+def test_google_bigquery_client_connection_passes_when_dataset_is_accessible() -> None:
+    """Connection test passes when the configured dataset is accessible."""
+    sdk_client = Mock(spec=bigquery.Client)
+
+    client = GoogleBigQueryClient(
+        config=BigQueryConfig(project_id="alpha60-dev", dataset_id="raw"),
+        client=sdk_client,
+    )
+
+    result = client.test_connection()
+
+    assert result is True
+    sdk_client.get_dataset.assert_called_once_with("alpha60-dev.raw")
+
+
+def test_google_bigquery_client_connection_fails_when_dataset_is_not_accessible() -> None:
+    """Connection test fails when the configured dataset is not accessible."""
+    sdk_client = Mock(spec=bigquery.Client)
+    sdk_client.get_dataset.side_effect = RuntimeError("dataset unavailable")
+
+    client = GoogleBigQueryClient(
+        config=BigQueryConfig(project_id="alpha60-dev", dataset_id="raw"),
+        client=sdk_client,
+    )
+
+    result = client.test_connection()
+
+    assert result is False
+    sdk_client.get_dataset.assert_called_once_with("alpha60-dev.raw")
+
+
 def test_google_bigquery_client_loads_rows_with_load_job() -> None:
     """Rows are loaded into BigQuery using a load job."""
     sdk_client = Mock(spec=bigquery.Client)
