@@ -1,6 +1,6 @@
 """Google BigQuery client adapter."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 from google.cloud import bigquery
@@ -56,4 +56,21 @@ class GoogleBigQueryClient:
             raise RuntimeError(f"BigQuery load failed: {load_job.errors}")
 
         return int(load_job.output_rows or len(rows_to_load))
-    
+
+    def query(
+        self,
+        sql: str,
+        parameters: Sequence[Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run a SQL query and return rows as dictionaries."""
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=list(parameters or []),
+        )
+
+        query_job = self._client.query(
+            sql,
+            job_config=job_config,
+            location=self._config.location,
+        )
+
+        return [dict(row.items()) for row in query_job.result()]

@@ -121,3 +121,63 @@ def test_google_bigquery_client_raises_when_load_job_has_errors() -> None:
         assert "BigQuery load failed" in str(exc)
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_google_bigquery_client_runs_query_and_returns_rows() -> None:
+    """Queries return BigQuery rows as dictionaries."""
+    sdk_client = Mock(spec=bigquery.Client)
+
+    row = Mock()
+    row.items.return_value = [("job_name", "shopify-products")]
+    query_job = Mock()
+    query_job.result.return_value = [row]
+    sdk_client.query.return_value = query_job
+
+    client = GoogleBigQueryClient(
+        config=BigQueryConfig(
+            project_id="alpha60-dev",
+            dataset_id="warehouse",
+            location="australia-southeast1",
+        ),
+        client=sdk_client,
+    )
+
+    result = client.query("SELECT job_name FROM platform_state")
+
+    assert result == [{"job_name": "shopify-products"}]
+    sdk_client.query.assert_called_once()
+
+    _, kwargs = sdk_client.query.call_args
+    assert kwargs["location"] == "australia-southeast1"
+    assert isinstance(kwargs["job_config"], bigquery.QueryJobConfig)
+
+
+def test_google_bigquery_client_passes_query_parameters() -> None:
+    """Query parameters are passed through to BigQuery."""
+    sdk_client = Mock(spec=bigquery.Client)
+
+    query_job = Mock()
+    query_job.result.return_value = []
+    sdk_client.query.return_value = query_job
+
+    parameter = bigquery.ScalarQueryParameter(
+        "job_name",
+        "STRING",
+        "shopify-products",
+    )
+
+    client = GoogleBigQueryClient(
+        config=BigQueryConfig(project_id="alpha60-dev", dataset_id="warehouse"),
+        client=sdk_client,
+    )
+
+    result = client.query(
+        "SELECT * FROM platform_state WHERE job_name = @job_name",
+        parameters=[parameter],
+    )
+
+    assert result == []
+    sdk_client.query.assert_called_once()
+
+    _, kwargs = sdk_client.query.call_args
+    assert kwargs["job_config"].query_parameters == [parameter]

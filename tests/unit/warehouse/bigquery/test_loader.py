@@ -1,6 +1,6 @@
 """Tests for the BigQuery warehouse loader."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -29,6 +29,14 @@ class FakeBigQueryClient:
         self.rows = list(rows)
         return self.rows_loaded
 
+    def query(
+        self,
+        sql: str,
+        parameters: Sequence[Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return no query rows."""
+        return []
+
 
 class FailingBigQueryClient:
     """Fake BigQuery client that raises an error."""
@@ -40,6 +48,14 @@ class FailingBigQueryClient:
     ) -> int:
         """Raise a fake BigQuery loading error."""
         raise RuntimeError("BigQuery load failed")
+
+    def query(
+        self,
+        sql: str,
+        parameters: Sequence[Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return no query rows."""
+        return []
 
 
 def test_bigquery_loader_loads_records() -> None:
