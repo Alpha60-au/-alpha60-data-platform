@@ -8,6 +8,7 @@ from alpha60.jobs.shopify_products_runner import run_shopify_products_ingestion
 from alpha60.operations.health import (
     HealthStatus,
     check_configuration,
+    check_shopify,
 )
 from alpha60.warehouse.types import WarehouseLoadStatus
 
@@ -51,6 +52,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate runtime configuration",
     )
 
+    test_subparsers.add_parser(
+        "shopify",
+        help="Validate Shopify connectivity",
+    )
+
     return parser
 
 
@@ -74,6 +80,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "test" and args.health_check == "config":
         settings = load_settings()
         health_result = check_configuration(settings=settings)
+
+        print(
+            f"{health_result.name}: "
+            f"{health_result.status.value} - "
+            f"{health_result.message}"
+        )
+
+        return 0 if health_result.status == HealthStatus.PASS else 1
+
+    if args.command == "test" and args.health_check == "shopify":
+        settings = load_settings()
+        health_result = check_shopify(settings=settings)
 
         print(
             f"{health_result.name}: "

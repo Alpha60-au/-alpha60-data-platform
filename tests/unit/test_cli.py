@@ -55,3 +55,28 @@ def test_cli_runs_configuration_health_check(capsys) -> None:
 
     captured = capsys.readouterr()
     assert "config: pass - Configuration is valid." in captured.out
+
+
+def test_cli_runs_shopify_health_check(capsys) -> None:
+    """The CLI runs the Shopify health check."""
+    health_result = HealthCheckResult(
+        name="shopify",
+        status=HealthStatus.PASS,
+        message="Shopify connection succeeded.",
+    )
+
+    with (
+        patch("alpha60.cli.load_settings") as load_settings,
+        patch("alpha60.cli.check_shopify") as check_shopify,
+    ):
+        settings = object()
+        load_settings.return_value = settings
+        check_shopify.return_value = health_result
+
+        exit_code = main(["test", "shopify"])
+
+    assert exit_code == 0
+    check_shopify.assert_called_once_with(settings=settings)
+
+    captured = capsys.readouterr()
+    assert "shopify: pass - Shopify connection succeeded." in captured.out
