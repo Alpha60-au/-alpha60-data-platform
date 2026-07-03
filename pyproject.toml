@@ -13,6 +13,9 @@ dependencies = [
     "requests",
 ]
 
+[project.scripts]
+alpha60 = "alpha60.cli:main"
+
 [dependency-groups]
 dev = [
     "mypy",
