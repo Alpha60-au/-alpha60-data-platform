@@ -32,8 +32,10 @@ def run_shopify_products_ingestion(settings: Settings) -> WarehouseLoadResult:
     state_repository = create_bigquery_state_repository(config=bigquery_config)
     state = state_repository.get_state(_SHOPIFY_PRODUCTS_JOB_NAME)
 
-    return load_shopify_products(
+    job_result = load_shopify_products(
         shopify_client=shopify_client,
         warehouse_loader=bigquery_loader,
         updated_since=state.cursor_value if state is not None else None,
     )
+
+    return job_result.warehouse_result
