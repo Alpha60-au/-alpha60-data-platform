@@ -5,6 +5,7 @@ import argparse
 
 from alpha60.config import load_settings
 from alpha60.core.logging import configure_logging, get_logger
+from alpha60.jobs.shopify_orders_runner import run_shopify_orders_ingestion
 from alpha60.jobs.shopify_products_runner import run_shopify_products_ingestion
 from alpha60.operations.health import (
     HealthCheckResult,
@@ -41,6 +42,11 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_subparsers.add_parser(
         "shopify-products",
         help="Load Shopify products into BigQuery",
+    )
+
+    ingest_subparsers.add_parser(
+        "shopify-orders",
+        help="Load Shopify orders into BigQuery",
     )
 
     test_parser = subparsers.add_parser(
@@ -81,6 +87,15 @@ def print_health_result(result: HealthCheckResult) -> None:
     print(f"{result.name}: {result.status.value} - {result.message}")
 
 
+def _print_load_result(load_result) -> None:
+    """Print an ingestion load result."""
+    print(
+        f"Loaded {load_result.rows_loaded} rows into "
+        f"{load_result.table_id} "
+        f"with status {load_result.status.value}."
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the ALPHA60 command line interface."""
     configure_logging()
@@ -99,14 +114,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings = load_settings()
         load_result = run_shopify_products_ingestion(settings=settings)
 
-        print(
-            f"Loaded {load_result.rows_loaded} rows into "
-            f"{load_result.table_id} "
-            f"with status {load_result.status.value}."
-        )
+        _print_load_result(load_result)
 
         logger.info(
             "Shopify products ingestion completed",
+            extra={
+                "table_id": load_result.table_id,
+                "rows_loaded": load_result.rows_loaded,
+                "status": load_result.status.value,
+            },
+        )
+
+        return 0 if load_result.status == WarehouseLoadStatus.SUCCESS else 1
+
+    if args.command == "ingest" and args.ingestion_job == "shopify-orders":
+        settings = load_settings()
+        load_result = run_shopify_orders_ingestion(settings=settings)
+
+        _print_load_result(load_result)
+
+        logger.info(
+            "Shopify orders ingestion completed",
             extra={
                 "table_id": load_result.table_id,
                 "rows_loaded": load_result.rows_loaded,

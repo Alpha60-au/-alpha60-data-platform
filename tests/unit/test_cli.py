@@ -32,6 +32,31 @@ def test_cli_runs_shopify_products_ingestion(capsys) -> None:
     assert "Loaded 3 rows into shopify_products with status success." in captured.out
 
 
+def test_cli_runs_shopify_orders_ingestion(capsys) -> None:
+    """The CLI runs the Shopify orders ingestion job."""
+    load_result = WarehouseLoadResult(
+        table_id="shopify_orders",
+        status=WarehouseLoadStatus.SUCCESS,
+        rows_loaded=4,
+    )
+
+    with (
+        patch("alpha60.cli.load_settings") as load_settings,
+        patch("alpha60.cli.run_shopify_orders_ingestion") as run_job,
+    ):
+        settings = object()
+        load_settings.return_value = settings
+        run_job.return_value = load_result
+
+        exit_code = main(["ingest", "shopify-orders"])
+
+    assert exit_code == 0
+    run_job.assert_called_once_with(settings=settings)
+
+    captured = capsys.readouterr()
+    assert "Loaded 4 rows into shopify_orders with status success." in captured.out
+
+
 def test_cli_runs_configuration_health_check(capsys) -> None:
     """The CLI runs the configuration health check."""
     result = HealthCheckResult(
