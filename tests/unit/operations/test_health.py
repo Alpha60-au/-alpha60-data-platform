@@ -1,6 +1,6 @@
 """Tests for operational health checks."""
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from alpha60.config.bigquery import BigQuerySettings
 from alpha60.config.settings import Settings
@@ -21,7 +21,8 @@ def build_settings() -> Settings:
         log_level="INFO",
         shopify=ShopifySettings(
             shop_domain="test-store.myshopify.com",
-            access_token="test-token",
+            client_id="test-client-id",
+            client_secret="test-client-secret",
         ),
         bigquery=BigQuerySettings(
             project_id="test-project",
@@ -61,7 +62,8 @@ def test_check_configuration_fails_when_required_settings_are_missing() -> None:
         log_level="INFO",
         shopify=ShopifySettings(
             shop_domain="",
-            access_token="",
+            client_id="",
+            client_secret="",
         ),
         bigquery=BigQuerySettings(
             project_id="",
@@ -76,7 +78,8 @@ def test_check_configuration_fails_when_required_settings_are_missing() -> None:
     assert result.message == (
         "Missing configuration: "
         "shopify.shop_domain, "
-        "shopify.access_token, "
+        "shopify.client_id, "
+        "shopify.client_secret, "
         "bigquery.project_id, "
         "bigquery.dataset_id"
     )
@@ -84,11 +87,28 @@ def test_check_configuration_fails_when_required_settings_are_missing() -> None:
 
 def test_check_shopify_passes_when_connection_succeeds() -> None:
     """Shopify health check passes when the connection succeeds."""
-    with patch("alpha60.operations.health.ShopifyClient") as shopify_client:
-        shopify_client.return_value.test_connection.return_value = True
+    with (
+        patch("alpha60.operations.health.ShopifyAuthenticator") as authenticator_class,
+        patch("alpha60.operations.health.ShopifyClient") as shopify_client_class,
+    ):
+        authenticator = Mock()
+        authenticator.get_access_token.return_value = "temporary-token"
+        authenticator_class.return_value = authenticator
+        shopify_client_class.return_value.test_connection.return_value = True
 
         result = check_shopify(settings=build_settings())
 
+    authenticator_class.assert_called_once_with(
+        shop_domain="test-store.myshopify.com",
+        client_id="test-client-id",
+        client_secret="test-client-secret",
+    )
+    authenticator.get_access_token.assert_called_once_with()
+    shopify_client_class.assert_called_once_with(
+        shop_domain="test-store.myshopify.com",
+        access_token="temporary-token",
+        api_version="2025-01",
+    )
     assert result == HealthCheckResult(
         name="shopify",
         status=HealthStatus.PASS,
@@ -98,8 +118,14 @@ def test_check_shopify_passes_when_connection_succeeds() -> None:
 
 def test_check_shopify_fails_when_connection_fails() -> None:
     """Shopify health check fails when the connection fails."""
-    with patch("alpha60.operations.health.ShopifyClient") as shopify_client:
-        shopify_client.return_value.test_connection.return_value = False
+    with (
+        patch("alpha60.operations.health.ShopifyAuthenticator") as authenticator_class,
+        patch("alpha60.operations.health.ShopifyClient") as shopify_client_class,
+    ):
+        authenticator = Mock()
+        authenticator.get_access_token.return_value = "temporary-token"
+        authenticator_class.return_value = authenticator
+        shopify_client_class.return_value.test_connection.return_value = False
 
         result = check_shopify(settings=build_settings())
 

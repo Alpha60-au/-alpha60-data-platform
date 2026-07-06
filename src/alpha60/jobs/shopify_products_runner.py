@@ -1,6 +1,7 @@
 """Composition root for Shopify product ingestion."""
 
 from alpha60.config.settings import Settings
+from alpha60.connectors.shopify.auth import ShopifyAuthenticator
 from alpha60.connectors.shopify.client import ShopifyClient
 from alpha60.jobs.shopify_products import load_shopify_products
 from alpha60.state import IncrementalState
@@ -18,9 +19,15 @@ _SHOPIFY_PRODUCTS_CURSOR_FIELD = "updated_at"
 
 def run_shopify_products_ingestion(settings: Settings) -> WarehouseLoadResult:
     """Run the Shopify products ingestion job using runtime settings."""
+    authenticator = ShopifyAuthenticator(
+        shop_domain=settings.shopify.shop_domain,
+        client_id=settings.shopify.client_id,
+        client_secret=settings.shopify.client_secret,
+    )
+
     shopify_client = ShopifyClient(
         shop_domain=settings.shopify.shop_domain,
-        access_token=settings.shopify.access_token,
+        access_token=authenticator.get_access_token(),
         api_version=settings.shopify.api_version,
     )
 

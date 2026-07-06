@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from alpha60.config.settings import Settings
+from alpha60.connectors.shopify.auth import ShopifyAuthenticator
 from alpha60.connectors.shopify.client import ShopifyClient
 from alpha60.warehouse.bigquery.config import BigQueryConfig
 from alpha60.warehouse.bigquery.google_client import GoogleBigQueryClient
@@ -32,8 +33,11 @@ def check_configuration(settings: Settings) -> HealthCheckResult:
     if not settings.shopify.shop_domain:
         missing.append("shopify.shop_domain")
 
-    if not settings.shopify.access_token:
-        missing.append("shopify.access_token")
+    if not settings.shopify.client_id:
+        missing.append("shopify.client_id")
+
+    if not settings.shopify.client_secret:
+        missing.append("shopify.client_secret")
 
     if not settings.bigquery.project_id:
         missing.append("bigquery.project_id")
@@ -57,9 +61,15 @@ def check_configuration(settings: Settings) -> HealthCheckResult:
 
 def check_shopify(settings: Settings) -> HealthCheckResult:
     """Validate Shopify connectivity."""
+    authenticator = ShopifyAuthenticator(
+        shop_domain=settings.shopify.shop_domain,
+        client_id=settings.shopify.client_id,
+        client_secret=settings.shopify.client_secret,
+    )
+
     client = ShopifyClient(
         shop_domain=settings.shopify.shop_domain,
-        access_token=settings.shopify.access_token,
+        access_token=authenticator.get_access_token(),
         api_version=settings.shopify.api_version,
     )
 

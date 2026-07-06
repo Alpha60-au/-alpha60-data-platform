@@ -19,7 +19,8 @@ def _settings() -> Settings:
         log_level="INFO",
         shopify=ShopifySettings(
             shop_domain="alpha60.myshopify.com",
-            access_token="secret",
+            client_id="client-id",
+            client_secret="client-secret",
             api_version="2025-01",
         ),
         bigquery=BigQuerySettings(
@@ -44,6 +45,9 @@ def test_run_shopify_products_ingestion_wires_dependencies() -> None:
     )
 
     with (
+        patch(
+            "alpha60.jobs.shopify_products_runner.ShopifyAuthenticator"
+        ) as authenticator_class,
         patch("alpha60.jobs.shopify_products_runner.ShopifyClient") as shopify_client_class,
         patch("alpha60.jobs.shopify_products_runner.create_bigquery_loader") as loader_factory,
         patch(
@@ -51,9 +55,12 @@ def test_run_shopify_products_ingestion_wires_dependencies() -> None:
         ) as state_repository_factory,
         patch("alpha60.jobs.shopify_products_runner.load_shopify_products") as load_job,
     ):
+        authenticator = Mock()
         shopify_client = Mock()
         warehouse_loader = Mock()
         state_repository = Mock()
+        authenticator.get_access_token.return_value = "temporary-token"
+        authenticator_class.return_value = authenticator
         shopify_client_class.return_value = shopify_client
         loader_factory.return_value = warehouse_loader
         state_repository_factory.return_value = state_repository
@@ -64,9 +71,15 @@ def test_run_shopify_products_ingestion_wires_dependencies() -> None:
 
     assert result == warehouse_result
 
+    authenticator_class.assert_called_once_with(
+        shop_domain="alpha60.myshopify.com",
+        client_id="client-id",
+        client_secret="client-secret",
+    )
+    authenticator.get_access_token.assert_called_once_with()
     shopify_client_class.assert_called_once_with(
         shop_domain="alpha60.myshopify.com",
-        access_token="secret",
+        access_token="temporary-token",
         api_version="2025-01",
     )
 
@@ -96,6 +109,9 @@ def test_run_shopify_products_ingestion_passes_existing_cursor() -> None:
     )
 
     with (
+        patch(
+            "alpha60.jobs.shopify_products_runner.ShopifyAuthenticator"
+        ) as authenticator_class,
         patch("alpha60.jobs.shopify_products_runner.ShopifyClient") as shopify_client_class,
         patch("alpha60.jobs.shopify_products_runner.create_bigquery_loader") as loader_factory,
         patch(
@@ -103,9 +119,12 @@ def test_run_shopify_products_ingestion_passes_existing_cursor() -> None:
         ) as state_repository_factory,
         patch("alpha60.jobs.shopify_products_runner.load_shopify_products") as load_job,
     ):
+        authenticator = Mock()
         shopify_client = Mock()
         warehouse_loader = Mock()
         state_repository = Mock()
+        authenticator.get_access_token.return_value = "temporary-token"
+        authenticator_class.return_value = authenticator
         shopify_client_class.return_value = shopify_client
         loader_factory.return_value = warehouse_loader
         state_repository_factory.return_value = state_repository
@@ -142,15 +161,19 @@ def test_run_shopify_products_ingestion_saves_cursor_after_successful_load() -> 
     )
 
     with (
-        patch("alpha60.jobs.shopify_products_runner.ShopifyClient") as shopify_client_class,
-        patch("alpha60.jobs.shopify_products_runner.create_bigquery_loader") as loader_factory,
+        patch(
+            "alpha60.jobs.shopify_products_runner.ShopifyAuthenticator"
+        ) as authenticator_class,
+        patch("alpha60.jobs.shopify_products_runner.ShopifyClient"),
+        patch("alpha60.jobs.shopify_products_runner.create_bigquery_loader"),
         patch(
             "alpha60.jobs.shopify_products_runner.create_bigquery_state_repository"
         ) as state_repository_factory,
         patch("alpha60.jobs.shopify_products_runner.load_shopify_products") as load_job,
     ):
-        shopify_client_class.return_value = Mock()
-        loader_factory.return_value = Mock()
+        authenticator = Mock()
+        authenticator.get_access_token.return_value = "temporary-token"
+        authenticator_class.return_value = authenticator
         state_repository = Mock()
         state_repository_factory.return_value = state_repository
         state_repository.get_state.return_value = None
@@ -184,6 +207,9 @@ def test_run_shopify_products_ingestion_does_not_save_cursor_after_failed_load()
     )
 
     with (
+        patch(
+            "alpha60.jobs.shopify_products_runner.ShopifyAuthenticator"
+        ) as authenticator_class,
         patch("alpha60.jobs.shopify_products_runner.ShopifyClient"),
         patch("alpha60.jobs.shopify_products_runner.create_bigquery_loader"),
         patch(
@@ -191,6 +217,9 @@ def test_run_shopify_products_ingestion_does_not_save_cursor_after_failed_load()
         ) as state_repository_factory,
         patch("alpha60.jobs.shopify_products_runner.load_shopify_products") as load_job,
     ):
+        authenticator = Mock()
+        authenticator.get_access_token.return_value = "temporary-token"
+        authenticator_class.return_value = authenticator
         state_repository = Mock()
         state_repository_factory.return_value = state_repository
         state_repository.get_state.return_value = None
