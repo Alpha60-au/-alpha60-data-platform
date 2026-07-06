@@ -3,15 +3,17 @@
 from alpha60.config.settings import Settings
 from alpha60.connectors.shopify.client import ShopifyClient
 from alpha60.jobs.shopify_products import load_shopify_products
+from alpha60.state import IncrementalState
 from alpha60.warehouse.bigquery.config import BigQueryConfig
 from alpha60.warehouse.bigquery.factory import (
     create_bigquery_loader,
     create_bigquery_state_repository,
 )
-from alpha60.warehouse.types import WarehouseLoadResult
+from alpha60.warehouse.types import WarehouseLoadResult, WarehouseLoadStatus
 
 
 _SHOPIFY_PRODUCTS_JOB_NAME = "shopify-products"
+_SHOPIFY_PRODUCTS_CURSOR_FIELD = "updated_at"
 
 
 def run_shopify_products_ingestion(settings: Settings) -> WarehouseLoadResult:
@@ -37,5 +39,18 @@ def run_shopify_products_ingestion(settings: Settings) -> WarehouseLoadResult:
         warehouse_loader=bigquery_loader,
         updated_since=state.cursor_value if state is not None else None,
     )
+
+    if (
+        job_result.warehouse_result.status == WarehouseLoadStatus.SUCCESS
+        and job_result.records_processed > 0
+        and job_result.latest_cursor is not None
+    ):
+        state_repository.save_state(
+            IncrementalState(
+                job_name=_SHOPIFY_PRODUCTS_JOB_NAME,
+                cursor_field=_SHOPIFY_PRODUCTS_CURSOR_FIELD,
+                cursor_value=job_result.latest_cursor,
+            )
+        )
 
     return job_result.warehouse_result
