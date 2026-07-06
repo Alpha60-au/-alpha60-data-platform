@@ -49,6 +49,26 @@ class HTTPClient:
         self._raise_for_status(response)
         return response
 
+    def post(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        data: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """Perform an HTTP POST request."""
+        try:
+            response = self._client.post(
+                url,
+                headers=headers,
+                data=data,
+            )
+        except httpx.TimeoutException as exc:
+            raise RequestTimeoutError("HTTP request timed out") from exc
+
+        self._raise_for_status(response)
+        return response
+
     def close(self) -> None:
         """Close the underlying HTTP client."""
         self._client.close()
