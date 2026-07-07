@@ -84,5 +84,5 @@ def test_transformation_pipeline_stops_after_failure() -> None:
     assert result.status == TransformationStatus.FAILED
     assert len(result.results) == 1
 
-    first.assert_called_once_with(settings=settings, staging_dataset_id=None)
+    first.assert_called_once_with(settings=settings, staging_dataset_id="stg")
     second.assert_not_called()

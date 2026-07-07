@@ -41,10 +41,14 @@ class TransformationPipeline:
         """Run every transformation step until one fails."""
         results: list[TransformationResult] = []
 
+        resolved_staging_dataset_id = (
+            staging_dataset_id or settings.bigquery.staging_dataset_id
+        )
+
         for step in self._steps:
             result = step.run(
                 settings=settings,
-                staging_dataset_id=staging_dataset_id,
+                staging_dataset_id=resolved_staging_dataset_id,
             )
             results.append(result)
 
