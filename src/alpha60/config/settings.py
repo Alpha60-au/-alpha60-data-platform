@@ -13,6 +13,7 @@ _DEFAULT_ENVIRONMENT = "development"
 _DEFAULT_LOG_LEVEL = "INFO"
 _DEFAULT_SHOPIFY_API_VERSION = "2025-01"
 _DEFAULT_BIGQUERY_LOCATION = "australia-southeast1"
+_DEFAULT_BIGQUERY_STAGING_DATASET_ID = "stg"
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +43,10 @@ def load_settings() -> Settings:
         bigquery=BigQuerySettings(
             project_id=os.getenv("ALPHA60_BIGQUERY_PROJECT_ID", ""),
             dataset_id=os.getenv("ALPHA60_BIGQUERY_DATASET_ID", ""),
+            staging_dataset_id=os.getenv(
+                "ALPHA60_BIGQUERY_STAGING_DATASET_ID",
+                _DEFAULT_BIGQUERY_STAGING_DATASET_ID,
+            ),
             location=os.getenv("ALPHA60_BIGQUERY_LOCATION", _DEFAULT_BIGQUERY_LOCATION),
         ),
     )

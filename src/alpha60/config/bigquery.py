@@ -9,4 +9,5 @@ class BigQuerySettings:
 
     project_id: str
     dataset_id: str
+    staging_dataset_id: str = "stg"
     location: str = "australia-southeast1"
