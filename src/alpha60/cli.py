@@ -21,6 +21,9 @@ from alpha60.transformations.shopify_order_lines_runner import (
 from alpha60.transformations.shopify_orders_runner import (
     run_shopify_orders_staging_transformation,
 )
+from alpha60.transformations.shopify_pipeline import (
+    create_shopify_transformation_pipeline,
+)
 from alpha60.transformations.shopify_products_runner import (
     run_shopify_products_staging_transformation,
 )
@@ -100,6 +103,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Build the Shopify products staging table",
     )
     shopify_products_transform_parser.add_argument(
+        "--staging-dataset",
+        default=None,
+        help="Override the configured BigQuery dataset for staging tables.",
+    )
+
+    transform_all_parser = transform_subparsers.add_parser(
+        "all",
+        help="Run the complete Shopify transformation pipeline",
+    )
+    transform_all_parser.add_argument(
         "--staging-dataset",
         default=None,
         help="Override the configured BigQuery dataset for staging tables.",
@@ -267,6 +280,33 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
         return 0 if transformation_result.status == TransformationStatus.SUCCESS else 1
+
+    if args.command == "transform" and args.transformation_job == "all":
+        settings = load_settings()
+        pipeline = create_shopify_transformation_pipeline()
+        pipeline_result = pipeline.run(
+            settings=settings,
+            staging_dataset_id=args.staging_dataset,
+        )
+
+        for result in pipeline_result.results:
+            _print_transformation_result(result)
+
+        logger.info(
+            "Shopify transformation pipeline completed",
+            extra={
+                "status": pipeline_result.status.value,
+                "steps": [
+                    {
+                        "target_table_id": result.target_table_id,
+                        "status": result.status.value,
+                    }
+                    for result in pipeline_result.results
+                ],
+            },
+        )
+
+        return 0 if pipeline_result.status == TransformationStatus.SUCCESS else 1
 
     if args.command == "test" and args.health_check == "config":
         settings = load_settings()
