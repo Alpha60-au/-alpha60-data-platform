@@ -35,5 +35,5 @@ def test_create_shopify_order_lines_staging_transformation_runs_sql() -> None:
         in sql
     )
     assert "FROM `alpha60-data-platform.raw.shopify_orders`" in sql
-    assert "CROSS JOIN UNNEST(raw_orders.payload.line_items) AS line_item" in sql
-    assert "SAFE_CAST(JSON_VALUE(TO_JSON(line_item), '$.quantity') AS INT64)" in sql
+    assert "JSON_QUERY_ARRAY(TO_JSON(raw_orders.payload), '$.line_items')" in sql
+    assert "SAFE_CAST(JSON_VALUE(line_item, '$.quantity') AS INT64)" in sql
