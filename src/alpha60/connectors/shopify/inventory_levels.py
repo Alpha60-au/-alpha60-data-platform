@@ -42,24 +42,46 @@ class InventoryLevelsResource:
         records: list[dict[str, object]] = []
 
         for inventory_item_id_chunk in _chunked(inventory_item_ids, 50):
-            response = self._client.get(
-                "/inventory_levels.json",
-                params={
-                    "inventory_item_ids": ",".join(
-                        str(inventory_item_id)
-                        for inventory_item_id in inventory_item_id_chunk
-                    ),
-                },
-            )
-            data = response.json()
+            params: dict[str, str] | None = {
+                "inventory_item_ids": ",".join(
+                    str(inventory_item_id)
+                    for inventory_item_id in inventory_item_id_chunk
+                ),
+                "limit": "250",
+            }
 
-            inventory_levels = data.get("inventory_levels", [])
-            if isinstance(inventory_levels, list):
-                records.extend(
-                    inventory_level
-                    for inventory_level in inventory_levels
-                    if isinstance(inventory_level, dict)
+            while params is not None:
+                response = self._client.get(
+                    "/inventory_levels.json",
+                    params=params,
                 )
+                data = response.json()
+
+                inventory_levels = data.get("inventory_levels", [])
+                if isinstance(inventory_levels, list):
+                    records.extend(
+                        inventory_level
+                        for inventory_level in inventory_levels
+                        if isinstance(inventory_level, dict)
+                    )
+
+                next_link = response.links.get("next", {})
+                next_url = next_link.get("url")
+
+                if not next_url:
+                    params = None
+                    continue
+
+                next_request = httpx.URL(next_url)
+                page_info = next_request.params.get("page_info")
+
+                if page_info is None:
+                    params = None
+                else:
+                    params = {
+                        "page_info": page_info,
+                        "limit": "250",
+                    }
 
         return records
 
