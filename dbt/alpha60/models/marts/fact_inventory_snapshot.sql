@@ -17,7 +17,7 @@ SELECT
     pv.vendor,
     pv.product_type,
 
-    il.available_quantity,
+    COALESCE(il.available_quantity, 0) AS available_quantity,
 
     p.status AS product_status,
 
