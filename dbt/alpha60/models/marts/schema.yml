@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: fact_sales
+    description: "One row per Shopify order line, used as the core sales fact table."
+    columns:
+      - name: order_line_id
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        tests:
+          - not_null
+      - name: net_sales
+        tests:
+          - not_null
+
+  - name: dim_customers
+    description: "One row per Shopify customer with customer attributes and lifetime sales metrics."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_products
+    description: "One row per Shopify product with product attributes and lifetime sales metrics."
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
