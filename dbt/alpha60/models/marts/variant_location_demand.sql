@@ -1,16 +1,17 @@
 WITH sales AS (
     SELECT
         variant_id,
-        product_id,
-        customer_email,
+        sales_location_name,
         order_created_at,
         quantity
     FROM `alpha60-data-platform.warehouse.fact_sales`
+    WHERE sales_location_name IS NOT NULL
 ),
 
-sales_by_variant AS (
+sales_by_variant_location AS (
     SELECT
         variant_id,
+        sales_location_name,
 
         SUM(
             CASE
@@ -32,7 +33,9 @@ sales_by_variant AS (
         MAX(order_created_at) AS last_sale_at
 
     FROM sales
-    GROUP BY variant_id
+    GROUP BY
+        variant_id,
+        sales_location_name
 ),
 
 warehouse_stock AS (
@@ -61,19 +64,19 @@ SELECT
 
     inventory.available_quantity,
 
-    COALESCE(sales_by_variant.units_sold_4_weeks, 0) AS units_sold_4_weeks,
-    COALESCE(sales_by_variant.units_sold_12_weeks, 0) AS units_sold_12_weeks,
+    COALESCE(sales.units_sold_4_weeks, 0) AS units_sold_4_weeks,
+    COALESCE(sales.units_sold_12_weeks, 0) AS units_sold_12_weeks,
 
-    sales_by_variant.first_sale_at,
-    sales_by_variant.last_sale_at,
+    sales.first_sale_at,
+    sales.last_sale_at,
 
     DATE_DIFF(
         CURRENT_DATE(),
-        DATE(sales_by_variant.last_sale_at),
+        DATE(sales.last_sale_at),
         DAY
     ) AS days_since_last_sale,
 
-    COALESCE(sales_by_variant.units_sold_12_weeks, 0) > 0 AS has_recent_demand,
+    COALESCE(sales.units_sold_12_weeks, 0) > 0 AS has_recent_demand,
 
     inventory.available_quantity <= 0 AS currently_out_of_stock,
 
@@ -85,8 +88,12 @@ SELECT
 
 FROM `alpha60-data-platform.warehouse.fact_inventory_snapshot` AS inventory
 
-LEFT JOIN sales_by_variant
-    ON inventory.variant_id = sales_by_variant.variant_id
+LEFT JOIN `alpha60-data-platform.warehouse.dim_locations` AS locations
+    ON inventory.location_id = locations.location_id
+
+LEFT JOIN sales_by_variant_location AS sales
+    ON inventory.variant_id = sales.variant_id
+   AND locations.sales_location_name = sales.sales_location_name
 
 LEFT JOIN warehouse_stock
     ON inventory.variant_id = warehouse_stock.variant_id
