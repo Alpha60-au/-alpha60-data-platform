@@ -6,7 +6,7 @@ import argparse
 from alpha60.config import load_settings
 from alpha60.core.logging import configure_logging, get_logger
 from alpha60.jobs.shopify_customers_runner import run_shopify_customers_ingestion
-from alpha60.jobs.daily_refresh_runner import (
+from alpha60.pipelines.daily_refresh import (
     DailyRefreshStatus,
     run_daily_refresh,
 )

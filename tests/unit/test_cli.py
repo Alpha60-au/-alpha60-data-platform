@@ -446,7 +446,7 @@ def test_cli_passes_shopify_products_staging_dataset(capsys) -> None:
 
 def test_cli_runs_daily_refresh(capsys) -> None:
     """The CLI runs the daily refresh workflow."""
-    from alpha60.jobs.daily_refresh_runner import (
+    from alpha60.pipelines.daily_refresh import (
         DailyRefreshResult,
         DailyRefreshStatus,
     )
@@ -498,7 +498,7 @@ def test_cli_runs_daily_refresh(capsys) -> None:
 
 def test_cli_passes_daily_refresh_orders_max_pages() -> None:
     """The CLI passes an optional order page limit to the daily refresh."""
-    from alpha60.jobs.daily_refresh_runner import (
+    from alpha60.pipelines.daily_refresh import (
         DailyRefreshResult,
         DailyRefreshStatus,
     )
@@ -533,7 +533,7 @@ def test_cli_passes_daily_refresh_orders_max_pages() -> None:
 
 def test_cli_returns_failure_for_failed_daily_refresh(capsys) -> None:
     """The CLI returns a non-zero exit code when the daily refresh fails."""
-    from alpha60.jobs.daily_refresh_runner import (
+    from alpha60.pipelines.daily_refresh import (
         DailyRefreshResult,
         DailyRefreshStatus,
     )

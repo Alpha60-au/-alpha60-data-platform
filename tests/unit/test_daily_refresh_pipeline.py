@@ -5,7 +5,7 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 
-from alpha60.jobs.daily_refresh_runner import (
+from alpha60.pipelines.daily_refresh import (
     DailyRefreshStatus,
     run_daily_refresh,
 )
@@ -32,7 +32,7 @@ def successful_transformation_pipeline() -> Iterator[Mock]:
     )
 
     with patch(
-        "alpha60.jobs.daily_refresh_runner.create_shopify_transformation_pipeline",
+        "alpha60.pipelines.daily_refresh.create_shopify_transformation_pipeline",
         return_value=pipeline,
     ):
         yield pipeline
@@ -81,13 +81,13 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
 
     with (
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_products_ingestion"
+            "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion"
         ) as run_products,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_orders_ingestion"
+            "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion"
         ) as run_orders,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_inventory_levels_ingestion"
+            "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion"
         ) as run_inventory,
     ):
         run_products.side_effect = run_products_side_effect
@@ -119,14 +119,14 @@ def test_daily_refresh_stops_when_products_fail() -> None:
 
     with (
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_products_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion",
             return_value=products_result,
         ) as run_products,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_orders_ingestion"
+            "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion"
         ) as run_orders,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_inventory_levels_ingestion"
+            "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion"
         ) as run_inventory,
     ):
         result = run_daily_refresh(settings=settings)
@@ -155,15 +155,15 @@ def test_daily_refresh_stops_when_orders_fail() -> None:
 
     with (
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_products_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion",
             return_value=products_result,
         ) as run_products,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_orders_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion",
             return_value=orders_result,
         ) as run_orders,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_inventory_levels_ingestion"
+            "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion"
         ) as run_inventory,
     ):
         result = run_daily_refresh(settings=settings)
@@ -193,15 +193,15 @@ def test_daily_refresh_reports_inventory_failure() -> None:
 
     with (
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_products_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion",
             return_value=products_result,
         ) as run_products,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_orders_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion",
             return_value=orders_result,
         ) as run_orders,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_inventory_levels_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion",
             return_value=inventory_result,
         ) as run_inventory,
     ):
@@ -227,15 +227,15 @@ def test_daily_refresh_passes_orders_max_pages() -> None:
 
     with (
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_products_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion",
             return_value=_successful_load("shopify_products", 3),
         ),
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_orders_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion",
             return_value=_successful_load("shopify_orders", 4),
         ) as run_orders,
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_inventory_levels_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion",
             return_value=_successful_load("shopify_inventory_levels", 5),
         ),
     ):
@@ -270,15 +270,15 @@ def test_daily_refresh_reports_transformation_failure(
 
     with (
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_products_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion",
             return_value=_successful_load("shopify_products", 3),
         ),
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_orders_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion",
             return_value=_successful_load("shopify_orders", 4),
         ),
         patch(
-            "alpha60.jobs.daily_refresh_runner.run_shopify_inventory_levels_ingestion",
+            "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion",
             return_value=_successful_load("shopify_inventory_levels", 5),
         ),
     ):
