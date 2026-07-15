@@ -4,6 +4,7 @@ WITH base AS (
         locations.can_send_rotations,
         locations.can_receive_rotations,
         locations.rotation_priority,
+        products.is_classics,
         UPPER(COALESCE(demand.product_type, '')) IN (
             'BAG',
             'LEATHER BAG',
@@ -90,11 +91,51 @@ candidates AS (
       ON receiver.variant_id = sender.variant_id
      AND receiver.location_id != sender.location_id
 
-    WHERE receiver.location_name != 'Oxford St'
-       OR (
+    WHERE (
+        receiver.location_name != 'Oxford St'
+        OR (
             sender.location_name = 'Newtown'
             AND sender.available_quantity >= 2
-       )
+        )
+    )
+
+    -- Newtown cannot supply Fitzroy or Flinders Lane.
+    AND NOT (
+        sender.location_name = 'Newtown'
+        AND receiver.location_name IN ('Fitzroy', 'Flinders Lane')
+    )
+
+    -- Smith St may receive only Denim or CLASSICS, and never from Newtown.
+    AND (
+        receiver.location_name != 'Smith St'
+        OR (
+            sender.location_name != 'Newtown'
+            AND (
+                UPPER(COALESCE(receiver.product_type, '')) LIKE '%DENIM%'
+                OR receiver.is_classics
+            )
+        )
+    )
+
+    -- Flinders Lane and Fitzroy are restricted sending stores.
+    AND (
+        sender.location_name NOT IN ('Flinders Lane', 'Fitzroy')
+        OR (
+            (
+                (
+                    sender.location_name = 'Flinders Lane'
+                    AND receiver.location_name IN ('Fitzroy', 'Smith St')
+                )
+                OR (
+                    sender.location_name = 'Fitzroy'
+                    AND receiver.location_name IN ('Flinders Lane', 'Smith St')
+                )
+            )
+            AND sender.available_quantity > 2
+            AND receiver.available_quantity = 0
+            AND receiver.style_demand_score > sender.style_demand_score
+        )
+    )
 ),
 
 ranked_candidates AS (
