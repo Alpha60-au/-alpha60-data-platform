@@ -50,3 +50,38 @@ models:
       - name: available_quantity
         tests:
           - not_null
+
+  - name: fact_daily_sales
+    description: "One row per trading date and location, including orders and refunds."
+    columns:
+      - name: trading_date
+        tests:
+          - not_null
+
+      - name: location_name
+        tests:
+          - not_null
+
+      - name: gross_sales
+        tests:
+          - not_null
+
+      - name: discounts
+        tests:
+          - not_null
+
+      - name: returns
+        tests:
+          - not_null
+
+      - name: shipping_sales
+        tests:
+          - not_null
+
+      - name: taxes
+        tests:
+          - not_null
+
+      - name: total_sales
+        tests:
+          - not_null
