@@ -125,6 +125,10 @@ candidates AS (
         receiver.location_name = 'Newtown'
         AND sender.location_name != 'Oxford St'
     )
+    AND (
+        receiver.location_name NOT IN ('Oxford St', 'Newtown')
+        OR receiver.available_quantity = 0
+    )
 
     -- Smith St may receive only Denim or CLASSICS, and never from Newtown.
     AND (
