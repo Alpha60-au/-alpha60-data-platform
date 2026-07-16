@@ -6,10 +6,10 @@ WITH base AS (
         products.is_classics
     FROM `alpha60-data-platform.warehouse.variant_location_demand` AS demand
 
-    JOIN `alpha60-data-platform.warehouse.dim_locations` AS locations
+    JOIN `alpha60-data-platform.warehouse.store_rotation_locations` AS locations
       ON demand.location_id = locations.location_id
 
-    JOIN `alpha60-data-platform.warehouse.dim_products` AS products
+    JOIN `alpha60-data-platform.warehouse.store_rotation_products` AS products
       ON demand.product_id = products.product_id
 
     WHERE products.is_season_aw26 = TRUE
@@ -68,7 +68,7 @@ destinations AS (
         style_inventory.style_available_quantity
     FROM style_inventory
 
-    JOIN `alpha60-data-platform.warehouse.dim_locations` AS locations
+    JOIN `alpha60-data-platform.warehouse.store_rotation_locations` AS locations
       ON style_inventory.location_id = locations.location_id
 
     WHERE locations.can_receive_rotations = TRUE

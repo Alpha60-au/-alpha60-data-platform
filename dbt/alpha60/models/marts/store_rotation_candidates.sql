@@ -19,9 +19,9 @@ WITH base AS (
             'JEWELLERY'
         ) AS is_bag_or_accessory
     FROM `alpha60-data-platform.warehouse.variant_location_demand` AS demand
-    JOIN `alpha60-data-platform.warehouse.dim_locations` AS locations
+    JOIN `alpha60-data-platform.warehouse.store_rotation_locations` AS locations
       ON demand.location_id = locations.location_id
-    JOIN `alpha60-data-platform.warehouse.dim_products` AS products
+    JOIN `alpha60-data-platform.warehouse.store_rotation_products` AS products
       ON demand.product_id = products.product_id
     WHERE products.is_season_aw26 = TRUE
       AND products.is_aw26_rotation_excluded = FALSE
