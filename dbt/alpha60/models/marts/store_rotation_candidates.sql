@@ -70,7 +70,15 @@ candidates AS (
 
         receiver.warehouse_available_quantity,
 
-        1 AS recommended_transfer_quantity,
+        CASE
+            WHEN receiver.location_name IN ('Oxford St', 'Newtown') THEN 1
+            WHEN receiver.available_quantity <= 0 THEN LEAST(
+                sender.available_quantity,
+                2
+            )
+            WHEN receiver.available_quantity = 1 THEN 1
+            ELSE 0
+        END AS recommended_transfer_quantity,
 
         CASE
             WHEN sender.location_name = 'Newtown' THEN 1
