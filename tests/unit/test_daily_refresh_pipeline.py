@@ -57,6 +57,20 @@ def successful_transformation_pipeline() -> Iterator[Mock]:
         yield pipeline
 
 
+@pytest.fixture(autouse=True)
+def successful_customer_ingestion() -> Iterator[Mock]:
+    """Provide a successful Shopify customer ingestion by default."""
+    with patch(
+        "alpha60.pipelines.daily_refresh.run_shopify_customers_ingestion",
+        return_value=WarehouseLoadResult(
+            table_id="shopify_customers",
+            status=WarehouseLoadStatus.SUCCESS,
+            rows_loaded=6,
+        ),
+    ) as run_customers:
+        yield run_customers
+
+
 def _successful_load(table_id: str, rows_loaded: int) -> WarehouseLoadResult:
     """Create a successful warehouse load result."""
     return WarehouseLoadResult(
@@ -77,11 +91,12 @@ def _failed_load(table_id: str, error_message: str) -> WarehouseLoadResult:
 
 
 def test_daily_refresh_runs_ingestions_in_order() -> None:
-    """The daily refresh runs products, orders, and inventory sequentially."""
+    """The daily refresh runs all Shopify ingestions sequentially."""
     settings = Mock()
 
     products_result = _successful_load("shopify_products", 3)
     orders_result = _successful_load("shopify_orders", 4)
+    customers_result = _successful_load("shopify_customers", 6)
     inventory_result = _successful_load("shopify_inventory_levels", 5)
 
     execution_order: list[str] = []
@@ -93,6 +108,10 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
     def run_orders_side_effect(**_: object) -> WarehouseLoadResult:
         execution_order.append("orders")
         return orders_result
+
+    def run_customers_side_effect(**_: object) -> WarehouseLoadResult:
+        execution_order.append("customers")
+        return customers_result
 
     def run_inventory_side_effect(**_: object) -> WarehouseLoadResult:
         execution_order.append("inventory")
@@ -106,25 +125,31 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
             "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion"
         ) as run_orders,
         patch(
+            "alpha60.pipelines.daily_refresh.run_shopify_customers_ingestion"
+        ) as run_customers,
+        patch(
             "alpha60.pipelines.daily_refresh.run_shopify_inventory_levels_ingestion"
         ) as run_inventory,
     ):
         run_products.side_effect = run_products_side_effect
         run_orders.side_effect = run_orders_side_effect
+        run_customers.side_effect = run_customers_side_effect
         run_inventory.side_effect = run_inventory_side_effect
 
         result = run_daily_refresh(settings=settings)
 
-    assert execution_order == ["products", "orders", "inventory"]
+    assert execution_order == ["products", "orders", "customers", "inventory"]
     assert result.status == DailyRefreshStatus.SUCCESS
     assert result.products_result == products_result
     assert result.orders_result == orders_result
+    assert result.customers_result == customers_result
     assert result.inventory_levels_result == inventory_result
     assert result.failed_stage is None
     assert result.error_message is None
 
     run_products.assert_called_once_with(settings=settings)
     run_orders.assert_called_once_with(settings=settings, max_pages=None)
+    run_customers.assert_called_once_with(settings=settings)
     run_inventory.assert_called_once_with(settings=settings)
 
 

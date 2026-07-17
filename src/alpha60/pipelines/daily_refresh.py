@@ -8,6 +8,7 @@ from pathlib import Path
 
 from alpha60.config.settings import Settings
 from alpha60.core.logging import get_logger
+from alpha60.jobs.shopify_customers_runner import run_shopify_customers_ingestion
 from alpha60.jobs.shopify_inventory_levels_runner import (
     run_shopify_inventory_levels_ingestion,
 )
@@ -45,6 +46,7 @@ class DailyRefreshResult:
     status: DailyRefreshStatus
     products_result: WarehouseLoadResult | None = None
     orders_result: WarehouseLoadResult | None = None
+    customers_result: WarehouseLoadResult | None = None
     inventory_levels_result: WarehouseLoadResult | None = None
     transformation_result: TransformationPipelineResult | None = None
     dbt_result: DbtBuildResult | None = None
@@ -58,6 +60,7 @@ def _failed_ingestion_result(
     result: WarehouseLoadResult,
     products_result: WarehouseLoadResult | None = None,
     orders_result: WarehouseLoadResult | None = None,
+    customers_result: WarehouseLoadResult | None = None,
     inventory_levels_result: WarehouseLoadResult | None = None,
 ) -> DailyRefreshResult:
     """Build a failed daily refresh result for an ingestion stage."""
@@ -65,6 +68,7 @@ def _failed_ingestion_result(
         status=DailyRefreshStatus.FAILED,
         products_result=products_result,
         orders_result=orders_result,
+        customers_result=customers_result,
         inventory_levels_result=inventory_levels_result,
         failed_stage=stage,
         error_message=result.error_message,
@@ -134,6 +138,33 @@ def run_daily_refresh(
         },
     )
 
+    logger.info("Daily refresh stage started", extra={"stage": "shopify-customers"})
+    customers_result = run_shopify_customers_ingestion(settings=settings)
+
+    if customers_result.status != WarehouseLoadStatus.SUCCESS:
+        logger.error(
+            "Daily refresh stage failed",
+            extra={
+                "stage": "shopify-customers",
+                "error_message": customers_result.error_message,
+            },
+        )
+        return _failed_ingestion_result(
+            stage="shopify-customers",
+            result=customers_result,
+            products_result=products_result,
+            orders_result=orders_result,
+            customers_result=customers_result,
+        )
+
+    logger.info(
+        "Daily refresh stage completed",
+        extra={
+            "stage": "shopify-customers",
+            "rows_loaded": customers_result.rows_loaded,
+        },
+    )
+
     logger.info(
         "Daily refresh stage started",
         extra={"stage": "shopify-inventory-levels"},
@@ -155,6 +186,7 @@ def run_daily_refresh(
             result=inventory_levels_result,
             products_result=products_result,
             orders_result=orders_result,
+            customers_result=customers_result,
             inventory_levels_result=inventory_levels_result,
         )
 
@@ -187,6 +219,7 @@ def run_daily_refresh(
             status=DailyRefreshStatus.FAILED,
             products_result=products_result,
             orders_result=orders_result,
+            customers_result=customers_result,
             inventory_levels_result=inventory_levels_result,
             transformation_result=transformation_result,
             failed_stage="shopify-transformations",
@@ -220,6 +253,7 @@ def run_daily_refresh(
             status=DailyRefreshStatus.FAILED,
             products_result=products_result,
             orders_result=orders_result,
+            customers_result=customers_result,
             inventory_levels_result=inventory_levels_result,
             transformation_result=transformation_result,
             dbt_result=dbt_result,
@@ -240,6 +274,7 @@ def run_daily_refresh(
         status=DailyRefreshStatus.SUCCESS,
         products_result=products_result,
         orders_result=orders_result,
+        customers_result=customers_result,
         inventory_levels_result=inventory_levels_result,
         transformation_result=transformation_result,
         dbt_result=dbt_result,
