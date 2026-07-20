@@ -1,3 +1,14 @@
+WITH latest_customers AS (
+
+  SELECT *
+  FROM `alpha60-data-platform.stg.shopify_customers`
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY customer_id
+    ORDER BY customer_updated_at DESC
+  ) = 1
+
+)
+
 SELECT
   c.customer_id,
   c.email,
@@ -35,7 +46,7 @@ SELECT
 
   CURRENT_TIMESTAMP() AS modelled_at
 
-FROM `alpha60-data-platform.stg.shopify_customers` AS c
+FROM latest_customers AS c
 
 LEFT JOIN `alpha60-data-platform.warehouse.fact_sales` AS fs
   ON LOWER(c.email) = LOWER(fs.customer_email)
