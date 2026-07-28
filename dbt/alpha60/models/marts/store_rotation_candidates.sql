@@ -170,9 +170,9 @@ ranked_candidates AS (
         ROW_NUMBER() OVER (
             PARTITION BY variant_id, send_from_location_id
             ORDER BY
+                send_to_available_quantity ASC,
                 rotation_score DESC,
                 send_to_style_units_12_weeks DESC,
-                send_to_available_quantity ASC,
                 send_to_rotation_priority DESC,
                 send_to_location_name ASC
         ) AS donor_rank
