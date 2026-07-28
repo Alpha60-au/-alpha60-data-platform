@@ -8,7 +8,7 @@ SELECT
 
     REGEXP_CONTAINS(
         LOWER(COALESCE(tags, '')),
-        r'(^|,\s*)aw26 rotations'
+        r'(^|,\s*)aw26 rotation'
     ) AS is_aw26_rotation_excluded,
 
     REGEXP_CONTAINS(
