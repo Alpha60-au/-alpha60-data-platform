@@ -10,8 +10,8 @@ WITH base AS (
       ON demand.location_id = locations.location_id
     JOIN {{ ref('store_rotation_products') }} AS products
       ON demand.product_id = products.product_id
-    WHERE products.is_season_aw26 = TRUE
-      AND products.is_aw26_rotation_excluded = FALSE
+    WHERE products.is_season_ss27 = TRUE
+      AND products.is_ss27_rotation_excluded = FALSE
       AND products.is_sock = FALSE
 ),
 

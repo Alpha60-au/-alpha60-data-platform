@@ -12,6 +12,16 @@ SELECT
     ) AS is_aw26_rotation_excluded,
 
     REGEXP_CONTAINS(
+        LOWER(COALESCE(tags, '')),
+        r'(^|,\s*)season_ss27(\s*,|$)'
+    ) AS is_season_ss27,
+
+    REGEXP_CONTAINS(
+        LOWER(COALESCE(tags, '')),
+        r'(^|,\s*)ss27 rotation'
+    ) AS is_ss27_rotation_excluded,
+
+    REGEXP_CONTAINS(
         LOWER(COALESCE(product_title, '')),
         r'\bsocks?\b'
     ) AS is_sock,
