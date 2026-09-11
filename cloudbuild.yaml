@@ -1,0 +1,42 @@
+steps:
+  - id: quality-checks
+    name: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        uv sync --dev
+        uv run ruff check src tests
+        uv run mypy src tests
+        uv run pytest
+
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - australia-southeast1-docker.pkg.dev/$PROJECT_ID/alpha60/alpha60-data-platform:$COMMIT_SHA
+      - .
+
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - australia-southeast1-docker.pkg.dev/$PROJECT_ID/alpha60/alpha60-data-platform:$COMMIT_SHA
+
+  - id: deploy-daily-refresh
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - update
+      - alpha60-daily-refresh
+      - --project=$PROJECT_ID
+      - --region=australia-southeast1
+      - --image=australia-southeast1-docker.pkg.dev/$PROJECT_ID/alpha60/alpha60-data-platform:$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s
