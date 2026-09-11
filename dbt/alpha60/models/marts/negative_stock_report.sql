@@ -1,7 +1,9 @@
 {{ config(materialized='view') }}
 
 SELECT
+    fis.location_id,
     fis.location_name,
+    fis.city,
     fis.product_title,
     fis.variant_title,
     fis.sku,
