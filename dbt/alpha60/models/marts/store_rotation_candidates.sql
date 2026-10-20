@@ -20,7 +20,8 @@ receivers AS (
     FROM base
     WHERE can_receive_rotations = TRUE
       AND warehouse_available_quantity <= 0
-      AND available_quantity < 2
+      AND desired_stock_level IS NOT NULL
+      AND available_quantity < desired_stock_level
 ),
 
 senders AS (
@@ -48,6 +49,9 @@ candidates AS (
         receiver.location_id AS send_to_location_id,
         receiver.location_name AS send_to_location_name,
         receiver.available_quantity AS send_to_available_quantity,
+        receiver.desired_stock_level AS send_to_desired_stock_level,
+        receiver.desired_stock_level
+            - receiver.available_quantity AS send_to_stock_shortfall,
         receiver.style_units_sold_12_weeks AS send_to_style_units_12_weeks,
         receiver.style_demand_score AS send_to_style_demand_score,
         receiver.rotation_priority AS send_to_rotation_priority,
@@ -56,12 +60,11 @@ candidates AS (
 
         CASE
             WHEN receiver.location_name IN ('Oxford St', 'Newtown') THEN 1
-            WHEN receiver.available_quantity <= 0 THEN LEAST(
+            ELSE LEAST(
                 sender.available_quantity,
-                2
+                receiver.desired_stock_level
+                    - receiver.available_quantity
             )
-            WHEN receiver.available_quantity = 1 THEN 1
-            ELSE 0
         END AS recommended_transfer_quantity,
 
         CASE

@@ -55,6 +55,7 @@ class HTTPClient:
         *,
         headers: dict[str, str] | None = None,
         data: dict[str, str] | None = None,
+        json: dict[str, object] | None = None,
     ) -> httpx.Response:
         """Perform an HTTP POST request."""
         try:
@@ -62,6 +63,7 @@ class HTTPClient:
                 url,
                 headers=headers,
                 data=data,
+                json=json,
             )
         except httpx.TimeoutException as exc:
             raise RequestTimeoutError("HTTP request timed out") from exc

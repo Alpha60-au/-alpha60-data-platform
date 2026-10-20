@@ -64,6 +64,23 @@ SELECT
 
     inventory.available_quantity,
 
+    CASE inventory.location_name
+        WHEN 'Claremont'
+            THEN desired_stock.desired_stock_level_claremont
+        WHEN 'James St'
+            THEN desired_stock.desired_stock_level_james_st
+        WHEN 'Oxford St'
+            THEN desired_stock.desired_stock_level_oxford_st
+        WHEN 'Newtown'
+            THEN desired_stock.desired_stock_level_newtown
+        WHEN 'Smith St'
+            THEN desired_stock.desired_stock_level_smith_st
+        WHEN 'Fitzroy'
+            THEN desired_stock.desired_stock_level_fitzroy
+        WHEN 'Flinders Lane'
+            THEN desired_stock.desired_stock_level_flinders_lane
+    END AS desired_stock_level,
+
     COALESCE(sales.units_sold_4_weeks, 0) AS units_sold_4_weeks,
     COALESCE(sales.units_sold_12_weeks, 0) AS units_sold_12_weeks,
 
@@ -101,6 +118,9 @@ LEFT JOIN sales_by_variant_location AS sales
 
 LEFT JOIN warehouse_stock
     ON inventory.variant_id = warehouse_stock.variant_id
+
+LEFT JOIN `alpha60-data-platform.stg.shopify_variant_metafields` AS desired_stock
+    ON inventory.variant_id = desired_stock.variant_id
 
 LEFT JOIN `alpha60-data-platform.warehouse.style_location_demand` AS style_demand
     ON inventory.product_id = style_demand.product_id

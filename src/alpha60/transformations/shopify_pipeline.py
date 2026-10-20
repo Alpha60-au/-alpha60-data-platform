@@ -25,6 +25,9 @@ from alpha60.transformations.shopify_product_variants_runner import (
 from alpha60.transformations.shopify_products_runner import (
     run_shopify_products_staging_transformation,
 )
+from alpha60.transformations.shopify_variant_metafields_runner import (
+    run_shopify_variant_metafields_staging_transformation,
+)
 
 
 def create_shopify_transformation_pipeline() -> TransformationPipeline:
@@ -39,6 +42,10 @@ def create_shopify_transformation_pipeline() -> TransformationPipeline:
             TransformationPipelineStep(
                 name="shopify-product-variants",
                 run=run_shopify_product_variants_staging_transformation,
+            ),
+            TransformationPipelineStep(
+                name="shopify-variant-metafields",
+                run=run_shopify_variant_metafields_staging_transformation,
             ),
             TransformationPipelineStep(
                 name="shopify-locations",

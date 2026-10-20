@@ -14,6 +14,7 @@ from .locations import LocationsResource
 from .inventory_levels import InventoryLevelsResource
 from .orders import OrdersResource
 from .products import ProductsResource
+from .variant_metafields import VariantMetafieldsResource
 
 
 class ShopifyClient:
@@ -33,6 +34,7 @@ class ShopifyClient:
         self.http_client = http_client or HTTPClient()
         self.orders = OrdersResource(self)
         self.products = ProductsResource(self)
+        self.variant_metafields = VariantMetafieldsResource(self)
         self.customers = CustomersResource(self)
         self.locations = LocationsResource(self)
         self.inventory_levels = InventoryLevelsResource(self)
@@ -58,6 +60,19 @@ class ShopifyClient:
             self.build_url(path),
             headers={"X-Shopify-Access-Token": self.access_token},
             params=params,
+        )
+
+    def post(
+        self,
+        path: str,
+        *,
+        json: dict[str, object] | None = None,
+    ) -> httpx.Response:
+        """Perform an authenticated Shopify POST request."""
+        return self.http_client.post(
+            self.build_url(path),
+            headers={"X-Shopify-Access-Token": self.access_token},
+            json=json,
         )
 
     def test_connection(self) -> bool:
@@ -100,6 +115,10 @@ class ShopifyClient:
     ) -> list[Record]:
         """Fetch Shopify products as platform records."""
         return self.products.get_product_records(updated_since=updated_since)
+
+    def get_variant_metafield_records(self) -> list[Record]:
+        """Fetch desired-stock metafields for Shopify variants."""
+        return self.variant_metafields.get_variant_metafield_records()
 
     def get_customers(
         self,

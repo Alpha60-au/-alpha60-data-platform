@@ -14,6 +14,9 @@ from alpha60.jobs.shopify_inventory_levels_runner import (
 )
 from alpha60.jobs.shopify_orders_runner import run_shopify_orders_ingestion
 from alpha60.jobs.shopify_products_runner import run_shopify_products_ingestion
+from alpha60.jobs.shopify_variant_metafields_runner import (
+    run_shopify_variant_metafields_ingestion,
+)
 from alpha60.pipelines.dbt_pipeline import (
     DbtBuildResult,
     DbtBuildStatus,
@@ -106,6 +109,36 @@ def run_daily_refresh(
         extra={
             "stage": "shopify-products",
             "rows_loaded": products_result.rows_loaded,
+        },
+    )
+
+    logger.info(
+        "Daily refresh stage started",
+        extra={"stage": "shopify-variant-metafields"},
+    )
+    variant_metafields_result = (
+        run_shopify_variant_metafields_ingestion(settings=settings)
+    )
+
+    if variant_metafields_result.status != WarehouseLoadStatus.SUCCESS:
+        logger.error(
+            "Daily refresh stage failed",
+            extra={
+                "stage": "shopify-variant-metafields",
+                "error_message": variant_metafields_result.error_message,
+            },
+        )
+        return _failed_ingestion_result(
+            stage="shopify-variant-metafields",
+            result=variant_metafields_result,
+            products_result=products_result,
+        )
+
+    logger.info(
+        "Daily refresh stage completed",
+        extra={
+            "stage": "shopify-variant-metafields",
+            "rows_loaded": variant_metafields_result.rows_loaded,
         },
     )
 

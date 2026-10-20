@@ -71,6 +71,21 @@ def successful_customer_ingestion() -> Iterator[Mock]:
         yield run_customers
 
 
+@pytest.fixture(autouse=True)
+def successful_variant_metafield_ingestion() -> Iterator[Mock]:
+    """Provide successful variant metafield ingestion by default."""
+    with patch(
+        "alpha60.pipelines.daily_refresh."
+        "run_shopify_variant_metafields_ingestion",
+        return_value=WarehouseLoadResult(
+            table_id="shopify_variant_metafields",
+            status=WarehouseLoadStatus.SUCCESS,
+            rows_loaded=7,
+        ),
+    ) as run_variant_metafields:
+        yield run_variant_metafields
+
+
 def _successful_load(table_id: str, rows_loaded: int) -> WarehouseLoadResult:
     """Create a successful warehouse load result."""
     return WarehouseLoadResult(
@@ -95,6 +110,7 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
     settings = Mock()
 
     products_result = _successful_load("shopify_products", 3)
+    metafields_result = _successful_load("shopify_variant_metafields", 7)
     orders_result = _successful_load("shopify_orders", 4)
     customers_result = _successful_load("shopify_customers", 6)
     inventory_result = _successful_load("shopify_inventory_levels", 5)
@@ -104,6 +120,10 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
     def run_products_side_effect(**_: object) -> WarehouseLoadResult:
         execution_order.append("products")
         return products_result
+
+    def run_metafields_side_effect(**_: object) -> WarehouseLoadResult:
+        execution_order.append("variant_metafields")
+        return metafields_result
 
     def run_orders_side_effect(**_: object) -> WarehouseLoadResult:
         execution_order.append("orders")
@@ -122,6 +142,10 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
             "alpha60.pipelines.daily_refresh.run_shopify_products_ingestion"
         ) as run_products,
         patch(
+            "alpha60.pipelines.daily_refresh."
+            "run_shopify_variant_metafields_ingestion"
+        ) as run_metafields,
+        patch(
             "alpha60.pipelines.daily_refresh.run_shopify_orders_ingestion"
         ) as run_orders,
         patch(
@@ -132,13 +156,20 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
         ) as run_inventory,
     ):
         run_products.side_effect = run_products_side_effect
+        run_metafields.side_effect = run_metafields_side_effect
         run_orders.side_effect = run_orders_side_effect
         run_customers.side_effect = run_customers_side_effect
         run_inventory.side_effect = run_inventory_side_effect
 
         result = run_daily_refresh(settings=settings)
 
-    assert execution_order == ["products", "orders", "customers", "inventory"]
+    assert execution_order == [
+        "products",
+        "variant_metafields",
+        "orders",
+        "customers",
+        "inventory",
+    ]
     assert result.status == DailyRefreshStatus.SUCCESS
     assert result.products_result == products_result
     assert result.orders_result == orders_result
@@ -148,6 +179,7 @@ def test_daily_refresh_runs_ingestions_in_order() -> None:
     assert result.error_message is None
 
     run_products.assert_called_once_with(settings=settings)
+    run_metafields.assert_called_once_with(settings=settings)
     run_orders.assert_called_once_with(settings=settings, max_pages=None)
     run_customers.assert_called_once_with(settings=settings)
     run_inventory.assert_called_once_with(settings=settings)

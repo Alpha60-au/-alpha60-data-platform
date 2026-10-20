@@ -43,6 +43,8 @@ SELECT
     recommendations.variant_title,
     recommendations.sku,
     recommendations.send_to_location_name,
+    recommendations.send_to_desired_stock_level,
+    recommendations.send_to_stock_shortfall,
     recommendations.recommended_transfer_quantity,
 
     CASE recommendations.send_from_location_name
